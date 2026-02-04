@@ -1,5 +1,6 @@
 import json
-from ..llm import call_llm
+import os
+from lib.llm import call_llm
 
 class RequirementParserTool:
     """
@@ -7,33 +8,18 @@ class RequirementParserTool:
     Used by Analysis Core Executor.
     """
     
-    def parse(self, problem: str, context: dict) -> dict:
-        system_prompt = """
-        You are an expert mechanical engineering assistant.
-        Your goal is to analyze a problem description and determine if you have enough information to solve it using a Python script.
-        
-        STRICT RULES:
-        1. You must identify specific physical parameters (Radius, Length, Force, Material, etc.).
-        2. DO NOT assume defaults for these primary variables. You MUST ask the user for them.
-        3. Only assume defaults for universal constants (Gravity = 9.81, Density of Steel = 7850, etc.).
-        4. If the user provided values in 'Current Context', use them.
-        
-        If you need more information, return a JSON object with:
-        {
-            "status": "MISSING_INFO",
-            "reasoning": "Brief explanation...",
-            "missing_vars": [
-                {"name": "var_name", "type": "number|string", "description": "Question to ask user", "default": 10.0}
-            ]
-        }
+    def __init__(self):
+        # Path logic: lib/tools/../../prompts
+        base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+        self.prompt_path = os.path.join(base_dir, "prompts", "requirement_parser.md")
 
-        If you have enough information, return:
-        {
-            "status": "READY",
-            "variables": { "var_name": value, ... },
-            "plan": "Description of the solution steps"
-        }
-        """
+    def parse(self, problem: str, context: dict) -> dict:
+        
+        try:
+            with open(self.prompt_path, "r") as f:
+                system_prompt = f.read()
+        except Exception as e:
+            raise Exception(f"Failed to load prompt file: {e}")
 
         user_prompt = f"""
         Problem: {problem}

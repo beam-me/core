@@ -1,0 +1,26 @@
+{
+  "python_conventions": [
+    {
+      "topic": "imports",
+      "rule": "Use absolute imports for project modules.",
+      "example": "from lib.utils import helper"
+    },
+    {
+      "topic": "typing",
+      "rule": "Use type hints for all function arguments and return values.",
+      "example": "def func(a: int) -> str:"
+    }
+  ],
+  "physics_patterns": [
+    {
+      "topic": "time_step",
+      "rule": "For simulations, use a delta_time (dt) of at least 0.01s unless specified otherwise.",
+      "example": "dt = 0.01"
+    },
+    {
+      "topic": "constants",
+      "rule": "Define physical constants in UPPERCASE at module level.",
+      "example": "GRAVITY = 9.81"
+    }
+  ]
+}

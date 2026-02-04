@@ -1,38 +1,29 @@
 import uuid
 import datetime
 from typing import Dict, List, Any, Optional
-from pydantic import BaseModel, Field
 
 # ABSOLUTE IMPORT FIX
 from agents.base import BaseAgent, AgentMessage, AgentState
 
+# Import Shared Models
+from agents.hmao.models import Task, GlobalState
+
 # Import Cores (Absolute)
 from agents.hmao.cores.analysis_core import AnalysisCore
 from agents.hmao.cores.engineering_core import EngineeringCore
+from agents.drone.propulsion_sizing_agent import PropulsionSizingAgent
+from agents.drone.flight_control_safety_agent import FlightControlSafetyAgent
 
 # Import Modules (Absolute)
 from agents.hmao.modules.repository_index import RepositoryIndexModule
+from agents.hmao.modules.planner import PlannerModule
 
-# State Models
-class Task(BaseModel):
-    id: str
-    description: str
-    assigned_core: str
-    status: str = "PENDING" # PENDING, IN_PROGRESS, COMPLETED, FAILED
-    result: Optional[Dict[str, Any]] = None
-    dependencies: List[str] = []
-    metadata: Dict[str, Any] = {} # For passing specific instructions like "Reuse Mode"
-
-class GlobalState(BaseModel):
-    run_id: str
-    objective: str
-    tasks: Dict[str, Task] = {}
-    artifacts: Dict[str, Any] = {}
-    logs: List[Dict[str, Any]] = []
+# Import Auth
+from lib.auth import create_task_token
 
 class GlobalOrchestrator(BaseAgent):
     name = "hmao.orchestrator"
-    version = "v1.1.reuse"
+    version = "v1.2.refactor"
 
     def __init__(self, run_id: str):
         super().__init__(run_id)
@@ -42,9 +33,12 @@ class GlobalOrchestrator(BaseAgent):
         # Auto-Register Cores
         self.register_core("analysis_core", AnalysisCore(run_id))
         self.register_core("engineering_core", EngineeringCore(run_id))
+        self.register_core("engineering-propulsion-v1", PropulsionSizingAgent(run_id))
+        self.register_core("engineering-flightcontrol-v1", FlightControlSafetyAgent(run_id))
         
         # Initialize Modules
         self.repo_index = RepositoryIndexModule()
+        self.planner = PlannerModule()
 
     def register_core(self, core_name: str, core_instance: BaseAgent):
         self.cores[core_name] = core_instance
@@ -95,59 +89,9 @@ class GlobalOrchestrator(BaseAgent):
         else:
             self.log("Orchestrator", "Strategy", "No matches found. Strategy: BUILD.", "🧱")
 
-        # 3. Decomposition (Dynamic DAG based on Strategy)
-        if strategy == "REUSE":
-            # DIRECT EXECUTION
-            # Task 1: Analysis (still needed to map user inputs to code inputs)
-            task1 = Task(
-                id="task_analyze_reuse",
-                description=f"Analyze inputs for existing solution: {reuse_artifact['file_path']}",
-                assigned_core="analysis_core"
-            )
-            # Task 2: Execution (No writing, just running)
-            task2 = Task(
-                id="task_execute_reuse",
-                description="Execute existing solution.",
-                assigned_core="engineering_core",
-                dependencies=["task_analyze_reuse"],
-                metadata={"mode": "REUSE", "artifact": reuse_artifact}
-            )
-            self.state.tasks = {task1.id: task1, task2.id: task2}
-
-        elif strategy == "MODIFY":
-            # MODIFY FLOW
-            # Task 1: Analysis (Identify what needs changing)
-            task1 = Task(
-                id="task_analyze_diff",
-                description=f"Analyze requirements diff between '{reuse_artifact['problem_description']}' and '{problem}'.",
-                assigned_core="analysis_core"
-            )
-            # Task 2: Engineering (Modify Code + Run)
-            task2 = Task(
-                id="task_modify_run",
-                description=f"Refactor {reuse_artifact['file_path']} to meet new requirements.",
-                assigned_core="engineering_core",
-                dependencies=["task_analyze_diff"],
-                metadata={"mode": "MODIFY", "artifact": reuse_artifact}
-            )
-            self.state.tasks = {task1.id: task1, task2.id: task2}
-            
-        else:
-            # BUILD FLOW (Standard)
-            task1 = Task(
-                id="task_analyze",
-                description=f"Analyze requirements for: {problem}",
-                assigned_core="analysis_core"
-            )
-            task2 = Task(
-                id="task_implement",
-                description="Implement the solution based on analysis.",
-                assigned_core="engineering_core",
-                dependencies=["task_analyze"]
-            )
-            self.state.tasks = {task1.id: task1, task2.id: task2}
-
-        self.log("Orchestrator", "Decomposition", f"DAG constructed for {strategy} strategy.", "🔀")
+        # 3. Decomposition (Delegated to Planner)
+        self.state.tasks = self.planner.generate_plan(problem, strategy, reuse_artifact)
+        self.log("Orchestrator", "Decomposition", f"DAG constructed with {len(self.state.tasks)} tasks.", "🔀")
 
         # 4. Execution Loop
         max_loops = 10
@@ -176,8 +120,15 @@ class GlobalOrchestrator(BaseAgent):
                         from_agent=self.name, 
                         state=AgentState.FAILED, 
                         summary="Core not found",
-                        confidence=0.0 # FIXED
+                        confidence=0.0
                     )
+
+                # Mint Task Token
+                task_token = create_task_token(
+                    task_id=task.id,
+                    cores=[task.assigned_core],
+                    allow_direct=True
+                )
 
                 # Context Injection
                 context = {
@@ -185,7 +136,8 @@ class GlobalOrchestrator(BaseAgent):
                     "task": task.description,
                     "artifacts": self.state.artifacts,
                     "inputs": user_inputs,
-                    "metadata": task.metadata # Pass reuse metadata (mode, artifact)
+                    "metadata": task.metadata, # Pass reuse metadata (mode, artifact)
+                    "task_token": task_token # <--- PASSED HERE
                 }
 
                 result_msg = await core.run(context)
@@ -215,7 +167,7 @@ class GlobalOrchestrator(BaseAgent):
                             from_agent=self.name,
                             state=AgentState.AWAITING_USER,
                             summary="Clarification Needed",
-                            confidence=1.0, # FIXED
+                            confidence=1.0, 
                             payload={
                                 "missing_vars": result_msg.payload["missing_vars"],
                                 "trace_log": self.state.logs
@@ -237,7 +189,7 @@ class GlobalOrchestrator(BaseAgent):
             from_agent=self.name,
             state=AgentState.COMPLETED,
             summary="Mission Accomplished",
-            confidence=1.0, # FIXED
+            confidence=1.0,
             payload={
                 "trace_log": self.state.logs,
                 "artifacts": self.state.artifacts,

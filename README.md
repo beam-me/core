@@ -37,6 +37,21 @@ See `.env` files in `frontend/` and `backend/`.
 ## Deployment
 
 Designed for Vercel (frontend) and containerized backend.
-# core
-# core
-# core
+
+## Development Guide
+
+### Adding New Agents
+We follow a strict ABN (Agentic Bidirectional Negotiation) pattern.
+See [Agent Template & Standard Procedure](Project Docs/Agent_Template.md) for instructions on creating, registering, and wiring up new agents.
+
+### Agent Knowledge Bases
+Each agent is equipped with a specific JSON-based Knowledge Base in `backend/knowledge/`.
+This allows them to ground their decisions in domain-specific data.
+
+- **Propulsion Agent:** `propulsion_db.json` (Parts inventory)
+- **Safety Agent:** `safety_regulations.json` (Limits & margins)
+- **QA Agent:** `security_vulns.json` (Common CWEs)
+- **Engineering Core:** `engineering_best_practices.json` (Python/Physics patterns)
+- **Analysis Core:** `physics_constants.json` (Units & constants)
+
+To add knowledge, simply edit the corresponding JSON file. The agents load it dynamically.

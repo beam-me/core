@@ -1,17 +1,19 @@
 import os
-import openai
+from openai import OpenAI
 from dotenv import load_dotenv
 
 load_dotenv()
 
-openai.api_key = os.environ.get("OPENAI_API_KEY")
+# Initialize client globally or per call. Global is fine for serverless if not reused across requests weirdly.
+# Vercel might reuse the container.
+client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
 
 def call_llm(system_prompt: str, user_prompt: str, model: str = "gpt-4o"):
     """
     Calls OpenAI ChatCompletion.
     """
     try:
-        response = openai.chat.completions.create(
+        response = client.chat.completions.create(
             model=model,
             messages=[
                 {"role": "system", "content": system_prompt},
@@ -22,4 +24,5 @@ def call_llm(system_prompt: str, user_prompt: str, model: str = "gpt-4o"):
         return response.choices[0].message.content
     except Exception as e:
         print(f"LLM Error: {e}")
-        return None
+        # Return a safe fallback or re-raise
+        return f"Error generating response: {str(e)}"

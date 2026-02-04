@@ -44,3 +44,41 @@ begin
   limit match_count;
 end;
 $$;
+
+-- ABN SYSTEM TABLES --
+
+-- 1. Core Registry
+create table if not exists core_registry (
+  core_id text primary key,
+  public_key_pem text not null,
+  created_at timestamp with time zone default timezone('utc'::text, now())
+);
+
+-- 2. ABN Channels
+create table if not exists abn_channels (
+  channel_id text primary key,
+  task_id text not null,
+  origin_core text not null,
+  target_core text not null,
+  negotiation_budget int default 10,
+  expires_at timestamp with time zone not null,
+  revoked boolean default false,
+  created_at timestamp with time zone default timezone('utc'::text, now())
+);
+
+-- 3. ABN Transcripts
+create table if not exists abn_transcripts (
+  id uuid primary key default gen_random_uuid(),
+  trace_id text not null,
+  channel_id text not null references abn_channels(channel_id),
+  seq int not null,
+  origin_core text not null,
+  target_core text not null,
+  msg_type text not null,
+  payload_hash text,
+  payload_path text,
+  policy_decision jsonb default '{}'::jsonb,
+  gateway_verif jsonb default '{}'::jsonb,
+  detectors jsonb default '{}'::jsonb,
+  created_at timestamp with time zone default timezone('utc'::text, now())
+);

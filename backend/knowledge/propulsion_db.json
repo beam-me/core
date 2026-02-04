@@ -1,0 +1,68 @@
+{
+  "motors": [
+    {
+      "id": "m1",
+      "name": "T-Motor F40 PRO IV",
+      "kv": 1950,
+      "weight_g": 30,
+      "max_thrust_g": 1400,
+      "recommended_prop": "5-inch",
+      "voltage": "4S-6S",
+      "tags": ["racing", "freestyle", "high-performance"]
+    },
+    {
+      "id": "m2",
+      "name": "Emax ECO II 2207",
+      "kv": 2400,
+      "weight_g": 34,
+      "max_thrust_g": 1600,
+      "recommended_prop": "5-inch",
+      "voltage": "4S",
+      "tags": ["budget", "freestyle"]
+    },
+    {
+      "id": "m3",
+      "name": "BrotherHobby Avenger 2806.5",
+      "kv": 1300,
+      "weight_g": 45,
+      "max_thrust_g": 2200,
+      "recommended_prop": "7-inch",
+      "voltage": "6S",
+      "tags": ["long-range", "cinematic"]
+    }
+  ],
+  "escs": [
+    {
+      "id": "e1",
+      "name": "Hobbywing XRotor Micro 60A",
+      "current_a": 60,
+      "weight_g": 15,
+      "firmware": "BLHeli_32"
+    },
+    {
+      "id": "e2",
+      "name": "SpeedyBee 50A Stack",
+      "current_a": 50,
+      "weight_g": 12,
+      "firmware": "BLHeli_S"
+    }
+  ],
+  "batteries": [
+    {
+      "id": "b1",
+      "name": "Tattu R-Line Version 4.0",
+      "capacity_mah": 1300,
+      "voltage": "6S",
+      "weight_g": 220,
+      "c_rating": 130
+    },
+    {
+      "id": "b2",
+      "name": "CNHL Black Series",
+      "capacity_mah": 1500,
+      "voltage": "4S",
+      "weight_g": 180,
+      "c_rating": 100
+    }
+  ]
+}

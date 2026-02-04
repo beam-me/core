@@ -1,0 +1,31 @@
+{
+  "constants": [
+    {
+      "name": "Gravity",
+      "symbol": "g",
+      "value": 9.81,
+      "unit": "m/s^2"
+    },
+    {
+      "name": "Air Density",
+      "symbol": "rho",
+      "value": 1.225,
+      "unit": "kg/m^3",
+      "condition": "Sea Level, 15C"
+    }
+  ],
+  "common_units": [
+    {
+      "quantity": "Thrust",
+      "common": "grams (g)",
+      "si": "Newtons (N)",
+      "conversion": "1 g = 0.00981 N"
+    },
+    {
+      "quantity": "Energy",
+      "common": "mAh (Capacity)",
+      "si": "Joules (J)",
+      "conversion": "E(J) = Capacity(Ah) * Voltage(V) * 3600"
+    }
+  ]
+}

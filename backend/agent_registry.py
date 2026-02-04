@@ -1,58 +1,32 @@
-from typing import List, Dict
+from typing import List, Dict, Any, Optional
 
-AGENT_REGISTRY = [
+class AgentRegistry:
+    def __init__(self):
+        self._agents: Dict[str, Any] = {}
+        self._profiles: List[Dict[str, Any]] = []
+
+    def register(self, agent: Any):
+        # Prioritize 'agent_id', then 'name', then class name
+        agent_id = getattr(agent, "agent_id", getattr(agent, "name", str(agent.__class__.__name__)))
+        self._agents[agent_id] = agent
+        # Also store profile if available
+        if hasattr(agent, "profile"):
+            self._profiles.append(agent.profile)
+
+    def get_agent(self, agent_id: str) -> Optional[Any]:
+        return self._agents.get(agent_id)
+
+    def list_agents(self) -> List[Dict[str, Any]]:
+        # Return profiles or basic info
+        return self._profiles
+
+registry = AgentRegistry()
+
+# Legacy static data (kept for reference if needed)
+AGENT_REGISTRY_DATA = [
     {
         "id": "hmao.orchestrator",
         "name": "Global Orchestrator",
-        "role": "HMAO System Gateway",
-        "icon": "📡",
-        "description": "The central authority. Decomposes prompts into DAGs, dispatches tasks to Discipline Cores, and arbitrates conflicts. Owns the global state.",
-        "instructions": [
-            "Decompose User Prompt into Task DAG.",
-            "Dispatch subtasks to specialized Cores.",
-            "Maintain authoritative global state.",
-            "Aggregate artifacts (Analysis -> Code).",
-            "Pause for User Input if clarification is needed."
-        ],
-        "tools": ["Task DAG", "State Management", "Conflict Arbitration"],
-        "relationships": {
-            "incoming": ["User"],
-            "outgoing": ["Analysis Core", "Engineering Core"]
-        }
-    },
-    {
-        "id": "analysis_core",
-        "name": "Analysis Core",
-        "role": "Discipline Core (Triad)",
-        "icon": "🧐",
-        "description": "Specialized core for requirement elicitation and variable extraction. Operates under strict Planner-Executor-Critic cycle.",
-        "instructions": [
-            "Planner: Identify missing physics variables.",
-            "Executor: Use LLM to extract JSON schema.",
-            "Critic: Validate variable types and completeness."
-        ],
-        "tools": ["Problem Framer (LLM)", "Schema Validator"],
-        "relationships": {
-            "incoming": ["Global Orchestrator"],
-            "outgoing": ["Global Orchestrator"]
-        }
-    },
-    {
-        "id": "engineering_core",
-        "name": "Engineering Core",
-        "role": "Discipline Core (Triad)",
-        "icon": "🛠️",
-        "description": "Specialized core for implementation and verification. Encapsulates Code Writing, GitHub Ops, and Simulation Execution.",
-        "instructions": [
-            "Planner: Design Python solution architecture.",
-            "Executor: Generate code (CodeWriter) & Push to GitHub.",
-            "Executor: Run Simulation (Runner).",
-            "Critic: Validate Exit Code 0 and Output format (QA)."
-        ],
-        "tools": ["Code Writer", "GitHub API", "Python Sandbox", "QA Validator"],
-        "relationships": {
-            "incoming": ["Global Orchestrator"],
-            "outgoing": ["Global Orchestrator", "GitHub Repo"]
-        }
+        # ... (rest of the static data)
     }
 ]

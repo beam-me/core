@@ -1,4 +1,6 @@
 import json
+import re
+import os
 from ..llm import call_llm
 
 class CodeGeneratorTool:
@@ -7,19 +9,33 @@ class CodeGeneratorTool:
     Used by Engineering Core Executor.
     """
     
+    def __init__(self):
+        # Path logic: lib/tools/../../prompts
+        base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+        self.prompt_path = os.path.join(base_dir, "prompts", "code_generator.md")
+    
+    def _sanitize_var_name(self, name: str) -> str:
+        clean = re.sub(r'[^a-zA-Z0-9]', '_', name).lower()
+        clean = re.sub(r'_+', '_', clean)
+        clean = clean.strip('_')
+        if clean and clean[0].isdigit():
+            clean = f"v_{clean}"
+        return clean or "var"
+
     def generate(self, problem: str, plan: str, variables: dict, previous_code: str = None, error_feedback: str = None) -> str:
         
         # Helper to generate the mandatory casting block
         casting_lines = []
-        for var_name, value in variables.items():
-            # Smart Type Detection
-            is_numeric = False
-            safe_value = value
+        sanitized_map = {} 
+
+        for original_key, value in variables.items():
+            var_name = self._sanitize_var_name(original_key)
+            sanitized_map[original_key] = var_name
             
+            is_numeric = False
             if isinstance(value, (int, float)):
                 is_numeric = True
             elif isinstance(value, str):
-                # Try to parse string as number
                 try:
                     float(value)
                     is_numeric = True
@@ -27,62 +43,28 @@ class CodeGeneratorTool:
                     pass
             
             if is_numeric:
-                # It's a number (or string number like "10")
-                # casting line: var = float(inputs.get('var', value))
-                casting_lines.append(f"{var_name} = float(inputs.get('{var_name}', {value}))")
+                casting_lines.append(f"{var_name} = float(inputs.get('{original_key}', {value}))")
             else:
-                # It's definitely a string
-                casting_lines.append(f"{var_name} = str(inputs.get('{var_name}', '{value}'))")
+                casting_lines.append(f"{var_name} = str(inputs.get('{original_key}', '{value}'))")
         
         casting_block = "\n    ".join(casting_lines)
+        var_mapping_desc = "\n".join([f"- '{k}' -> variable `{v}`" for k, v in sanitized_map.items()])
+        example_var = list(sanitized_map.values())[0] if sanitized_map else 'var'
 
-        system_prompt = f"""
-        You are an expert Python engineer for physical simulations.
-        Your goal is to write a complete, executable Python script to solve the user's engineering problem.
-        
-        Constraints:
-        1. You MUST use the provided `variables` as the default inputs.
-        2. You MUST implement the `get_inputs()` function exactly as shown in the template.
-        3. You MUST print the final result to stdout as `Calculated Result: <value>`.
-        4. CRITICAL: You MUST use the provided "Casting Block" to ensure type safety.
-        
-        Template:
-        ```python
-        import math
-        import numpy as np
-        import os
-        import json
-
-        def get_inputs():
-            defaults = {json.dumps(variables)}
-            env_input = os.environ.get("BEAM_INPUTS")
-            if env_input:
-                try:
-                    overrides = json.loads(env_input)
-                    defaults.update(overrides)
-                except Exception:
-                    pass
-            return defaults
-
-        def solve():
-            inputs = get_inputs()
+        # Load Prompt
+        try:
+            with open(self.prompt_path, "r") as f:
+                raw_prompt = f.read()
             
-            # --- MANDATORY CASTING BLOCK ---
-            {casting_block}
-            # -------------------------------
+            system_prompt = raw_prompt.replace("{{var_mapping_desc}}", var_mapping_desc)
+            system_prompt = system_prompt.replace("{{variables_json}}", json.dumps(variables))
+            system_prompt = system_prompt.replace("{{casting_block}}", casting_block)
+            system_prompt = system_prompt.replace("{{example_var}}", example_var)
+            system_prompt = system_prompt.replace("{{result}}", "{result}") # Restore f-string brace
             
-            # --- CALCULATION SECTION ---
-            # Use the variables defined above.
-            # Example: area = math.pi * {list(variables.keys())[0] if variables else 'var'} ** 2
-            
-            # print(f"Calculated Result: {{result}}")
-            return True
+        except Exception as e:
+            return f"# Error loading prompt: {e}"
 
-        if __name__ == "__main__":
-            solve()
-        ```
-        """
-        
         if previous_code and error_feedback:
             # Refinement Mode
             user_prompt = f"""
@@ -94,7 +76,9 @@ class CodeGeneratorTool:
             Previous Code:
             {previous_code}
             
-            Please fix the error by ensuring you use the MANDATORY CASTING BLOCK shown in the template.
+            Please fix the error. 
+            Ensure you use the MANDATORY CASTING BLOCK and the Correct Variable Names:
+            {var_mapping_desc}
             """
         elif previous_code:
             # Modification Mode
@@ -117,6 +101,14 @@ class CodeGeneratorTool:
 
         response = call_llm(system_prompt, user_prompt)
         
-        # Cleanup
-        code = response.replace("```python", "").replace("```", "").strip()
+        match = re.search(r"```python(.*?)```", response, re.DOTALL)
+        if match:
+            code = match.group(1).strip()
+        else:
+            match_generic = re.search(r"```(.*?)```", response, re.DOTALL)
+            if match_generic:
+                code = match_generic.group(1).strip()
+            else:
+                code = response.strip()
+                
         return code

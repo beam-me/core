@@ -1,0 +1,24 @@
+{
+  "stability_margins": [
+    {
+      "metric": "Thrust-to-Weight Ratio",
+      "min": 1.5,
+      "recommended": 2.0,
+      "max": 10.0,
+      "note": "Below 1.5 is sluggish; above 10 is racing only."
+    },
+    {
+      "metric": "Hover Throttle",
+      "min_percent": 20,
+      "max_percent": 60,
+      "note": "Ideal hover is around 40-50% throttle."
+    }
+  ],
+  "environmental_limits": [
+    {
+      "condition": "Max Wind Speed",
+      "limit_m_s": 12,
+      "note": "Standard consumer drones should not fly above 12 m/s wind."
+    }
+  ]
+}

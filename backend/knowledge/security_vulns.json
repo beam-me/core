@@ -1,0 +1,31 @@
+{
+  "banned_functions": [
+    {
+      "func": "eval",
+      "reason": "Arbitrary code execution risk.",
+      "severity": "CRITICAL"
+    },
+    {
+      "func": "exec",
+      "reason": "Arbitrary code execution risk.",
+      "severity": "CRITICAL"
+    },
+    {
+      "func": "pickle.load",
+      "reason": "Unsafe deserialization.",
+      "severity": "HIGH"
+    }
+  ],
+  "common_cwes": [
+    {
+      "id": "CWE-78",
+      "name": "OS Command Injection",
+      "check": "Avoid subprocess.call with shell=True on user input."
+    },
+    {
+      "id": "CWE-89",
+      "name": "SQL Injection",
+      "check": "Use parameterized queries for DB access."
+    }
+  ]
+}
