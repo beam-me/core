@@ -5,6 +5,7 @@ from lib.abn_client import ABNClient
 from lib.knowledge_base import KnowledgeBase
 import json
 import os
+import sys
 
 class PropulsionSizingAgent(DisciplineCore):
     """
@@ -63,7 +64,11 @@ class PropulsionSizingAgent(DisciplineCore):
         Specific Inputs: {inputs}
         """
         
+        print(f"DEBUG: Calling LLM for Propulsion...")
         response = call_llm(system_prompt, user_prompt)
+        print(f"DEBUG: LLM Response: {response}")
+        sys.stdout.flush()
+
         if not response:
             return {"error": "LLM failed to generate propulsion recommendation."}
             
@@ -71,7 +76,8 @@ class PropulsionSizingAgent(DisciplineCore):
             cleaned = response.replace("```json", "").replace("```", "").strip()
             rec = json.loads(cleaned)
         except Exception as e:
-            return {"error": f"Failed to parse propulsion recommendation: {e}", "raw": response}
+            # CHANGED ERROR MESSAGE TO VERIFY DEPLOYMENT
+            return {"error": f"JSON PARSE ERROR: {e}", "raw": response}
 
         # 3. ABN Negotiation: Check with Flight Safety
         try:
