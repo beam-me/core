@@ -36,8 +36,8 @@ class PlannerModule:
         
         user_prompt = f"Problem: {problem}"
         
-        # 3. Call LLM
-        response = call_llm(system_prompt, user_prompt)
+        # 3. Call LLM (JSON MODE)
+        response = call_llm(system_prompt, user_prompt, json_mode=True)
         
         if not response:
             return self._fallback_plan(problem, strategy, reuse_artifact)

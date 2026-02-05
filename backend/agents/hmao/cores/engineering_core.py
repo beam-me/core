@@ -29,7 +29,9 @@ class EngineeringCore(DisciplineCore):
         self.github = GitHubTool()
         
         # Initialize Knowledge Base
-        base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+        # Path logic: backend/agents/hmao/cores/engineering_core.py -> backend/knowledge
+        # Needs 4 dirnames
+        base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
         kb_path = os.path.join(base_dir, "knowledge", "engineering_best_practices.json")
         self.kb = KnowledgeBase(kb_path)
 

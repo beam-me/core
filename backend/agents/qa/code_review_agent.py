@@ -49,7 +49,8 @@ class CodeReviewAgent(DisciplineCore):
         except Exception as e:
             return {"error": f"Prompt loading failed: {e}"}
         
-        response = call_llm(system_prompt, f"Code:\n{code}")
+        # ENABLE JSON MODE
+        response = call_llm(system_prompt, f"Code:\n{code}", json_mode=True)
         try:
             return json.loads(response.replace("```json", "").replace("```", "").strip())
         except:

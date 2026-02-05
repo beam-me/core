@@ -26,7 +26,8 @@ class RequirementParserTool:
         Current Context: {json.dumps(context)}
         """
 
-        response_text = call_llm(system_prompt, user_prompt)
+        # ENABLE JSON MODE
+        response_text = call_llm(system_prompt, user_prompt, json_mode=True)
         if not response_text:
              raise Exception("LLM failed to analyze problem")
 

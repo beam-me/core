@@ -17,7 +17,9 @@ class AnalysisCore(DisciplineCore):
         self.parser = RequirementParserTool()
         
         # Initialize Knowledge Base
-        base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+        # Path logic: backend/agents/hmao/cores/analysis_core.py -> backend/knowledge
+        # Needs 4 dirnames
+        base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
         kb_path = os.path.join(base_dir, "knowledge", "physics_constants.json")
         self.kb = KnowledgeBase(kb_path)
 
@@ -44,7 +46,7 @@ class AnalysisCore(DisciplineCore):
         try:
             parsed_data = self.parser.parse(
                 problem=context.get("objective", ""),
-                context=artifacts # Now includes KB
+                context=artifacts 
             )
             return parsed_data
         except Exception as e:

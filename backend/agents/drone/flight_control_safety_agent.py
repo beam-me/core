@@ -66,7 +66,8 @@ class FlightControlSafetyAgent(DisciplineCore):
         General Requirements: {context.get("objective", "")}
         """
         
-        response = call_llm(system_prompt, user_prompt)
+        # ENABLE JSON MODE
+        response = call_llm(system_prompt, user_prompt, json_mode=True)
         if not response:
             return {"error": "LLM failed to generate safety assessment."}
             

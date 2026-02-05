@@ -64,11 +64,9 @@ class PropulsionSizingAgent(DisciplineCore):
         Specific Inputs: {inputs}
         """
         
-        print(f"DEBUG: Calling LLM for Propulsion...")
-        response = call_llm(system_prompt, user_prompt)
-        print(f"DEBUG: LLM Response: {response}")
-        sys.stdout.flush()
-
+        # ENABLE JSON MODE
+        response = call_llm(system_prompt, user_prompt, json_mode=True)
+        
         if not response:
             return {"error": "LLM failed to generate propulsion recommendation."}
             
@@ -76,7 +74,6 @@ class PropulsionSizingAgent(DisciplineCore):
             cleaned = response.replace("```json", "").replace("```", "").strip()
             rec = json.loads(cleaned)
         except Exception as e:
-            # CHANGED ERROR MESSAGE TO VERIFY DEPLOYMENT
             return {"error": f"JSON PARSE ERROR: {e}", "raw": response}
 
         # 3. ABN Negotiation: Check with Flight Safety
