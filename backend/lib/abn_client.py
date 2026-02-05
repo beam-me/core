@@ -4,6 +4,7 @@ import datetime
 # Import Router functions directly to simulate HTTP calls within process
 from routers.gateway import open_abn_channel, send_abn_message
 from models import ABNOpenRequest
+from lib.matchmaker import matchmaker
 
 class ABNClient:
     """
@@ -16,6 +17,29 @@ class ABNClient:
         self.channel_id = None
         self.abn_token = None
         
+    async def request_connection(self, need_description: str) -> Optional[str]:
+        """
+        Ask the Orchestrator to find a peer and open a channel.
+        Returns the target_core_id if successful.
+        """
+        print(f"[{self.origin_core_id}] Requesting connection for: {need_description}")
+        
+        # 1. Ask Orchestrator (Matchmaker)
+        target_id = matchmaker.find_best_agent(need_description)
+        
+        if not target_id:
+            print(f"Orchestrator could not find agent for: {need_description}")
+            return None
+            
+        print(f"Orchestrator selected: {target_id}")
+        
+        # 2. Open Channel
+        await self.open_channel(target_id)
+        
+        if self.channel_id:
+            return target_id
+        return None
+
     async def open_channel(self, target_core_id: str, budget: int = 10) -> str:
         """
         Opens a channel via the Gateway using the Task Token.
@@ -38,7 +62,11 @@ class ABNClient:
         print(f"[{self.origin_core_id}] Channel Open: {self.channel_id}")
         return self.channel_id
 
-    async def send_message(self, msg_type: str, payload: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+    async def send_message(self, target_core_id: str, msg_type: str, payload: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+        # Note: target_core_id arg is kept for compatibility with agent code, 
+        # but the channel is already bound to a target.
+        # We should verify it matches or just ignore it.
+        
         if not self.channel_id or not self.abn_token:
             raise Exception("Channel not open")
             
@@ -48,11 +76,7 @@ class ABNClient:
             "trace_id": str(uuid.uuid4()),
             "channel_id": self.channel_id,
             "origin_core": self.origin_core_id,
-            "target_core": payload.get("target_core"), # Target is implicit in channel but payload might specify? 
-            # Wait, channel is P2P. Target was defined at open.
-            # But send_abn_message implementation in gateway looks at envelope['target_core'].
-            # We should probably store target_core in self.
-            # For now, let's assume the caller provides it or we fix it.
+            "target_core": target_core_id, 
             "msg_type": msg_type,
             "seq": 1, # TODO: Increment
             **payload
