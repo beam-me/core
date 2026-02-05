@@ -49,9 +49,11 @@ export function RunStream({ selectedRun, isLoading, onRerun }: RunStreamProps) {
           const data = JSON.parse(stdout);
           // Check signature keys for Physics Agent
           if (data.analysis && data.final_answer && data.steps && data.analysis.knowns) {
+              console.log("Physics Visualizer: Valid Data Detected", data);
               return data;
           }
       } catch (e) {
+          // Silent fail for normal text output
           return null;
       }
       return null;

@@ -2,13 +2,13 @@ import { Calculator, Variable, ArrowRight, BookOpen } from 'lucide-react';
 
 interface PhysicsData {
   analysis: {
-    knowns: Record<string, string>;
+    knowns: Record<string, string | number>;
     unknowns: string[];
     assumptions?: string[];
   };
   steps: string[];
   final_answer: {
-    value: number;
+    value: number | string;
     unit: string;
     variable: string;
   };
@@ -21,10 +21,13 @@ interface PhysicsVisualizerProps {
 
 export function PhysicsVisualizer({ data }: PhysicsVisualizerProps) {
   // If data is missing or malformed, return null safely
-  if (!data || !data.analysis || !data.final_answer) return null;
+  if (!data || !data.analysis || !data.final_answer) {
+      console.warn("PhysicsVisualizer received invalid data:", data);
+      return null;
+  }
 
   return (
-    <div className="bg-slate-900 border border-slate-700 rounded-xl overflow-hidden shadow-2xl ring-1 ring-white/5 my-6">
+    <div className="bg-slate-900 border border-slate-700 rounded-xl overflow-hidden shadow-2xl ring-1 ring-white/5 my-6 animate-in fade-in slide-in-from-bottom-4">
       
       {/* Header */}
       <div className="bg-slate-800/50 px-4 py-3 border-b border-slate-700 flex items-center justify-between">
@@ -48,7 +51,7 @@ export function PhysicsVisualizer({ data }: PhysicsVisualizerProps) {
                     <Variable className="w-3 h-3" /> Known Variables
                 </h4>
                 <div className="grid grid-cols-2 gap-3">
-                    {Object.entries(data.analysis.knowns).map(([key, val]) => (
+                    {data.analysis.knowns && Object.entries(data.analysis.knowns).map(([key, val]) => (
                         <div key={key} className="bg-slate-950/50 border border-slate-800 p-3 rounded-lg flex justify-between items-center group hover:border-green-500/30 transition-colors">
                             <span className="font-mono text-slate-400 font-bold">{key}</span>
                             <span className="font-mono text-green-400">{val}</span>
@@ -65,7 +68,7 @@ export function PhysicsVisualizer({ data }: PhysicsVisualizerProps) {
                 <div className="bg-slate-950/50 border border-slate-800 p-3 rounded-lg flex items-center gap-2 border-l-4 border-l-orange-500">
                     <span className="text-slate-400 text-sm">Find:</span>
                     <div className="flex gap-2">
-                        {data.analysis.unknowns.map(v => (
+                        {data.analysis.unknowns && data.analysis.unknowns.map(v => (
                             <span key={v} className="font-mono text-orange-400 font-bold bg-orange-900/20 px-2 py-0.5 rounded border border-orange-500/20">{v}</span>
                         ))}
                     </div>
@@ -89,7 +92,7 @@ export function PhysicsVisualizer({ data }: PhysicsVisualizerProps) {
 
             {/* Steps Scroll */}
             <div className="flex-grow bg-slate-950 border border-slate-800 rounded-lg p-4 font-mono text-sm text-slate-300 space-y-4 max-h-[200px] overflow-y-auto mb-6">
-                {data.steps.map((step, i) => (
+                {data.steps && data.steps.map((step, i) => (
                     <div key={i} className="flex gap-3">
                         <span className="text-slate-600 select-none">{i+1}.</span>
                         <span>{step}</span>
