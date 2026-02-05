@@ -78,7 +78,10 @@ class FlightControlSafetyAgent(DisciplineCore):
 
     async def _validate(self, result: Dict[str, Any], context: Dict[str, Any]) -> Dict[str, Any]:
         if "error" in result:
-             return {"passed": False, "reason": result["error"]}
+             reason = result["error"]
+             if "raw" in result:
+                 reason += f" [Raw Output: {str(result['raw'])[:200]}]"
+             return {"passed": False, "reason": reason}
         
         if result.get("assessment") == "UNSAFE":
              return {"passed": True, "warning": "Configuration deemed UNSAFE. Redesign recommended."}

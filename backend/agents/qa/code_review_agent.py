@@ -56,6 +56,11 @@ class CodeReviewAgent(DisciplineCore):
             return {"error": "Failed to parse review", "raw": response}
 
     async def _validate(self, result: Dict[str, Any], context: Dict[str, Any]) -> Dict[str, Any]:
+        if "error" in result:
+             reason = result["error"]
+             if "raw" in result:
+                 reason += f" [Raw Output: {str(result['raw'])[:200]}]"
+             return {"passed": False, "reason": reason}
         return {"passed": True}
 
     async def handle_abn_message(self, envelope: Dict[str, Any], payload: Dict[str, Any]) -> Dict[str, Any]:
