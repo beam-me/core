@@ -19,6 +19,7 @@ from agents.hmao.cores.engineering_core import EngineeringCore
 from agents.drone.propulsion_sizing_agent import PropulsionSizingAgent
 from agents.drone.flight_control_safety_agent import FlightControlSafetyAgent
 from agents.qa.code_review_agent import CodeReviewAgent
+from agents.physics.classical_mechanics_agent import ClassicalMechanicsAgent
 
 load_dotenv()
 
@@ -43,6 +44,7 @@ registry.register(EngineeringCore("sys"))
 registry.register(PropulsionSizingAgent("sys"))
 registry.register(FlightControlSafetyAgent("sys"))
 registry.register(CodeReviewAgent("sys"))
+registry.register(ClassicalMechanicsAgent("sys"))
 
 @app.get("/")
 def read_root():
@@ -61,48 +63,25 @@ class RunContinueRequest(BaseModel):
 
 @app.post("/api/run/start")
 async def start_run(req: RunStartRequest):
-    # Determine which agent to start with (Orchestrator usually)
-    # Using "hmao.orchestrator" as defined in GlobalOrchestrator.name
     agent_class = registry.get_agent("hmao.orchestrator")
     if not agent_class:
         return {"error": "Orchestrator not found"}
     
-    # Instantiate the agent for this run
+    # Instantiate fresh for this run
     run_id = f"run-{os.urandom(4).hex()}"
-    # The registry stores the CLASS or INSTANCE?
-    # My registry code: registry.register(GlobalOrchestrator("sys")) stores an INSTANCE.
-    # So agent_class is actually an INSTANCE.
-    # BUT, we need a NEW instance for a new run.
-    # Refactoring registry usage:
-    # Option A: Registry stores classes.
-    # Option B: Registry stores a "System" instance, and we use it as a factory.
-    
-    # In my previous registry update, I registered GlobalOrchestrator("sys").
-    # So `registry.get_agent` returns that instance.
-    # That instance has state! This is bad for concurrent runs if I reuse it.
-    # Ideally, I should register the CLASS.
-    
-    # Quick fix: Use the class directly since I know it here.
-    # Or rely on the fact that for Vercel (serverless), memory is ephemeral per request usually, 
-    # but concurrent requests might share the process.
-    
-    # Better approach: Instantiate fresh here.
     agent = GlobalOrchestrator(run_id)
     
-    # Execute the Agent (Run until pause or completion)
-    # This might take 5-10s.
     result_msg = await agent.run({
         "problem": req.problem_description,
         "inputs": {}
     })
     
-    # Map AgentMessage to Frontend Response
     response = {
         "run_id": run_id,
         "state": result_msg.state, 
         "problem_description": req.problem_description,
         "payload": {
-            "trace_log": agent.state.logs, # Use the logs from the agent state
+            "trace_log": agent.state.logs,
             "missing_vars": result_msg.payload.get("missing_vars", []),
             "execution_result": result_msg.payload.get("execution_result", {}),
             "code_url": result_msg.payload.get("code_url")
@@ -113,12 +92,11 @@ async def start_run(req: RunStartRequest):
 
 @app.post("/api/run/continue")
 async def continue_run(req: RunContinueRequest):
-    # Re-instantiate agent (Stateless mode: Re-run with new inputs)
     agent = GlobalOrchestrator(req.run_id)
     
     result_msg = await agent.run({
         "problem": req.problem_description,
-        "inputs": req.inputs # User provided variables
+        "inputs": req.inputs 
     })
 
     return {
@@ -190,6 +168,16 @@ async def get_agents():
             "instructions": ["Check PEP8", "Find security holes"],
             "tools": ["static_analysis"],
             "relationships": {"incoming": ["engineering-core"], "outgoing": []}
+        },
+        {
+            "id": "physics-classical-mechanics-v1",
+            "name": "Classical Mechanics",
+            "role": "Physicist",
+            "icon": "🍎",
+            "description": "Solves Newtonian physics problems (forces, motion, energy).",
+            "instructions": ["Identify Knowns/Unknowns", "Use Standard Model"],
+            "tools": ["formula_db", "solver"],
+            "relationships": {"incoming": ["hmao-orchestrator"], "outgoing": []}
         }
     ]
 

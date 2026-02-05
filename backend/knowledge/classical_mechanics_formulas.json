@@ -1,0 +1,53 @@
+{
+  "kinematics_suvat": [
+    {
+      "name": "First Equation of Motion",
+      "formula": "v = u + at",
+      "variables": ["v (final velocity)", "u (initial velocity)", "a (acceleration)", "t (time)"]
+    },
+    {
+      "name": "Second Equation of Motion",
+      "formula": "s = ut + 0.5 * a * t^2",
+      "variables": ["s (displacement)", "u", "t", "a"]
+    },
+    {
+      "name": "Third Equation of Motion",
+      "formula": "v^2 = u^2 + 2as",
+      "variables": ["v", "u", "a", "s"]
+    }
+  ],
+  "dynamics_forces": [
+    {
+      "name": "Newton's Second Law",
+      "formula": "F_net = m * a",
+      "variables": ["F_net (net force)", "m (mass)", "a (acceleration)"]
+    },
+    {
+      "name": "Weight",
+      "formula": "W = m * g",
+      "variables": ["W (weight)", "m (mass)", "g (gravity ~ 9.81)"]
+    },
+    {
+      "name": "Friction",
+      "formula": "F_f = mu * N",
+      "variables": ["F_f (friction force)", "mu (coefficient of friction)", "N (normal force)"]
+    }
+  ],
+  "energy_momentum": [
+    {
+      "name": "Kinetic Energy",
+      "formula": "KE = 0.5 * m * v^2",
+      "variables": ["KE (Joules)", "m (kg)", "v (m/s)"]
+    },
+    {
+      "name": "Gravitational Potential Energy",
+      "formula": "PE = m * g * h",
+      "variables": ["PE (Joules)", "m", "g", "h (height)"]
+    },
+    {
+      "name": "Momentum",
+      "formula": "p = m * v",
+      "variables": ["p (momentum)", "m", "v"]
+    }
+  ]
+}

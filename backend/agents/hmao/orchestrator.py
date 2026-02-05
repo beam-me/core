@@ -13,6 +13,7 @@ from agents.hmao.cores.analysis_core import AnalysisCore
 from agents.hmao.cores.engineering_core import EngineeringCore
 from agents.drone.propulsion_sizing_agent import PropulsionSizingAgent
 from agents.drone.flight_control_safety_agent import FlightControlSafetyAgent
+from agents.physics.classical_mechanics_agent import ClassicalMechanicsAgent
 
 # Import Modules (Absolute)
 from agents.hmao.modules.repository_index import RepositoryIndexModule
@@ -35,6 +36,7 @@ class GlobalOrchestrator(BaseAgent):
         self.register_core("engineering_core", EngineeringCore(run_id))
         self.register_core("engineering-propulsion-v1", PropulsionSizingAgent(run_id))
         self.register_core("engineering-flightcontrol-v1", FlightControlSafetyAgent(run_id))
+        self.register_core("physics-classical-mechanics-v1", ClassicalMechanicsAgent(run_id))
         
         # Initialize Modules
         self.repo_index = RepositoryIndexModule()
