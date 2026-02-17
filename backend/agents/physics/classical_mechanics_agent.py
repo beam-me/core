@@ -1,15 +1,18 @@
-from typing import Dict, Any
+from typing import Dict, Any, List, Optional
 from agents.hmao.core import DisciplineCore
 from lib.llm import call_llm
 from lib.knowledge_base import KnowledgeBase
+from lib.drone_physics import PAVPhysics, RHO_STD # Import Shared Physics
 import json
 import os
+import math
 
 class ClassicalMechanicsAgent(DisciplineCore):
     """
     Agent ID: physics-classical-mechanics-v1
     Role: Solve Newtonian physics problems (Kinematics, Dynamics, Energy).
     Has access to Classical Mechanics Formulas KB.
+    Updated with PAV Physics for general aerodynamic calculations.
     """
     name = "physics-classical-mechanics-v1"
     
@@ -48,11 +51,26 @@ class ClassicalMechanicsAgent(DisciplineCore):
         Energy & Momentum: {json.dumps(energy, indent=2)}
         """
         
-        # 2. Load Prompt
+        # 2. Check for Aerodynamic specific requests (Basic check)
+        # If user asks for "Dynamic Pressure" or similar, we can help calculate it directly.
+        extra_context = ""
+        if "velocity" in inputs:
+            try:
+                rho = float(inputs.get("density", RHO_STD))
+                v = float(inputs["velocity"])
+                # Use Shared Library
+                q = PAVPhysics.calc_dynamic_pressure(rho, v)
+                extra_context += f"\n[System Note] Calculated Dynamic Pressure (q): {q:.4f} lb/ft^2 (at rho={rho}, V={v})"
+            except:
+                pass
+        
+        # 3. Load Prompt
         try:
             with open(self.prompt_path, "r") as f:
                 raw_prompt = f.read()
             system_prompt = raw_prompt.replace("{{kb_context}}", kb_context)
+            if extra_context:
+                system_prompt += extra_context
         except Exception as e:
             return {"error": f"Prompt loading failed: {e}"}
         
@@ -61,7 +79,7 @@ class ClassicalMechanicsAgent(DisciplineCore):
         Specific Inputs: {inputs}
         """
         
-        # 3. Call LLM (JSON Mode)
+        # 4. Call LLM (JSON Mode)
         response = call_llm(system_prompt, user_prompt, json_mode=True)
         if not response:
             return {"error": "LLM failed to solve the problem."}

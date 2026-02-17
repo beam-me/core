@@ -52,9 +52,16 @@ class CodeReviewAgent(DisciplineCore):
         # ENABLE JSON MODE
         response = call_llm(system_prompt, f"Code:\n{code}", json_mode=True)
         try:
-            return json.loads(response.replace("```json", "").replace("```", "").strip())
+            cleaned = response.replace("```json", "").replace("```", "").strip()
+            return json.loads(cleaned)
         except:
-            return {"error": "Failed to parse review", "raw": response}
+            # Fallback for parsing errors
+            return {
+                "status": "Review Failed",
+                "score": 0,
+                "issues": [{"severity": "HIGH", "line": 0, "message": "JSON Parse Error from LLM"}],
+                "raw_response": response
+            }
 
     async def _validate(self, result: Dict[str, Any], context: Dict[str, Any]) -> Dict[str, Any]:
         if "error" in result:
@@ -64,7 +71,8 @@ class CodeReviewAgent(DisciplineCore):
              return {"passed": False, "reason": reason}
         return {"passed": True}
 
-    async def handle_abn_message(self, envelope: Dict[str, Any], payload: Dict[str, Any]) -> Dict[str, Any]:
+    async def handle_abn_message(self, envelope: Dict[str, Any]) -> Dict[str, Any]:
+        payload = envelope
         code = payload.get("code")
         context = {"code": code}
         review_result = await self._execute({}, context)

@@ -1,0 +1,84 @@
+{
+  "simulation_guidelines": [
+    {
+      "parameter": "Mesh Density",
+      "value": "Tetrahedral elements with local refinement",
+      "region": "Junctions, arm ends, motor mounts",
+      "priority": "Critical"
+    },
+    {
+      "parameter": "Software Tools",
+      "value": "Autodesk Inventor, Inventor Nastran",
+      "description": "Used for hierarchical simulation (global static + nonlinear transient)."
+    },
+    {
+      "parameter": "Validation Check",
+      "method": "Beam Theory",
+      "formula": "WL^3/3EI",
+      "description": "Always compare simulation deflection to simple beam theory as a sanity check."
+    },
+    {
+      "parameter": "Failure Criteria",
+      "criteria": [
+        "Von Mises Stress < Yield Strength (e.g., 40 MPa)",
+        "Max Principal Strain (Z-axis) < 5%"
+      ]
+    },
+    {
+      "parameter": "Flight Control Tuning",
+      "value": "PID adjustment required",
+      "description": "Tune for low-mass dynamics and frame-specific resonance. (Firmware: Betaflight)"
+    }
+  ],
+  "load_cases": [
+    {
+      "case": "Hovering Flight (1G)",
+      "load": "0.613 N per arm (Total: 2.452 N)",
+      "description": "Baseline static equilibrium."
+    },
+    {
+      "case": "Maximum Acceleration",
+      "load": "4.2 G (41.19 m/s^2)",
+      "description": "Vertical ascent or aggressive punch-out."
+    },
+    {
+      "case": "High-Speed Maneuver",
+      "velocity": "116 km/h",
+      "description": "Aerodynamic loads at max speed."
+    },
+    {
+      "case": "Lateral Impact",
+      "velocity": "40 km/h (11 m/s)",
+      "description": "Crash scenario into rigid object."
+    }
+  ],
+  "validation_data": {
+    "hover_analysis": {
+      "load_condition": "1G Static",
+      "max_von_mises_stress_mpa": 0.6973,
+      "max_displacement_mm": 0.234,
+      "safety_factor": "~57.36",
+      "note": "Structure operates far below limit."
+    },
+    "impact_analysis": {
+      "scenario": "Lateral Impact at 40 km/h",
+      "safety_factor_impact": "~1.35",
+      "note": "Plastic deformation expected but structural integrity maintained."
+    },
+    "experimental_correlation": {
+      "flight_tests": "Instrumented flights with Betaflight telemetry confirmed loads.",
+      "visual_check": "Prototype printed in PETG validated assembly and flightworthiness."
+    }
+  },
+  "experimental_factors": [
+    {
+      "factor": "Anisotropy",
+      "description": "3D printed parts (FDM) are weaker in Z-direction (tensile strength ~40-60% lower).",
+      "correction": "Use conservative isotropic properties based on weakest axis or apply 1.5x Safety Factor."
+    },
+    {
+      "factor": "Fillets",
+      "description": "Increasing fillet radius at junctions reduces peak stress by ~40%."
+    }
+  ]
+}

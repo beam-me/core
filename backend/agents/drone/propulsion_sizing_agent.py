@@ -1,8 +1,9 @@
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 from agents.hmao.core import DisciplineCore
 from lib.llm import call_llm
 from lib.abn_client import ABNClient
 from lib.knowledge_base import KnowledgeBase
+from lib.drone_physics import PAVPhysics  # Import Shared Physics Library
 import json
 import os
 import sys
@@ -12,6 +13,7 @@ class PropulsionSizingAgent(DisciplineCore):
     Agent ID: engineering-propulsion-v1
     Role: Choose motors, props, gearing for required thrust & endurance.
     Has access to a Knowledge Base of components.
+    Includes physics-based validation for power requirements using shared PAVPhysics.
     """
     name = "engineering-propulsion-v1" 
     
@@ -28,14 +30,24 @@ class PropulsionSizingAgent(DisciplineCore):
 
     async def _plan(self, context: Dict[str, Any]) -> Dict[str, Any]:
         return {
-            "summary": "Select propulsion components from Knowledge Base and VALIDATE via ABN.",
-            "strategy": "1. Search KB. 2. Generate recommendation. 3. Negotiate with Flight Safety."
+            "summary": "Select propulsion components from Knowledge Base and VALIDATE via physics + ABN.",
+            "strategy": "1. Search KB. 2. Calculate Power Req (Hover/Cruise) using PAVPhysics. 3. Generate recommendation. 4. Negotiate."
         }
-
+    
     async def _execute(self, plan: Dict[str, Any], context: Dict[str, Any]) -> Dict[str, Any]:
         problem = context.get("problem", "")
         inputs = context.get("inputs", {})
         
+        # Extract basic parameters for physics check (if available)
+        # Default fallback values used if not provided in inputs
+        weight_lbs = float(inputs.get("weight_lbs", 10.0))
+        disc_area_ft2 = float(inputs.get("disc_area_ft2", 2.0)) # Approx for a medium quad
+        
+        # Calculate theoretical power requirements using SHARED LIBRARY
+        hover_kw_req = PAVPhysics.calc_hover_power_kw(weight_lbs, disc_area_ft2)
+        
+        self.log("Executor", "Physics", f"Calculated Hover Power Req: {hover_kw_req:.2f} kW (Weight: {weight_lbs}lbs)", "🧮")
+
         # 1. RETRIEVE KNOWLEDGE
         motors = self.kb.search("motors")
         escs = self.kb.search("escs")
@@ -46,6 +58,10 @@ class PropulsionSizingAgent(DisciplineCore):
         Motors: {json.dumps(motors, indent=2)}
         ESCs: {json.dumps(escs, indent=2)}
         Batteries: {json.dumps(batteries, indent=2)}
+        
+        PHYSICS CONSTRAINTS:
+        - Estimated Hover Power Required: {hover_kw_req:.2f} kW
+        - Ensure selected motor + battery combination exceeds this value with safety margin.
         """
         
         self.log("Executor", "Retrieval", "Loaded component inventory from Knowledge Base.", "📚")
@@ -62,6 +78,8 @@ class PropulsionSizingAgent(DisciplineCore):
         user_prompt = f"""
         Requirements: {problem}
         Specific Inputs: {inputs}
+        Calculated Requirements:
+        - Hover Power: {hover_kw_req:.2f} kW
         """
         
         # ENABLE JSON MODE
@@ -73,6 +91,11 @@ class PropulsionSizingAgent(DisciplineCore):
         try:
             cleaned = response.replace("```json", "").replace("```", "").strip()
             rec = json.loads(cleaned)
+            # Inject our calculated value for reference in the output
+            rec["physics_calcs"] = {
+                "hover_power_kw_required": hover_kw_req,
+                "weight_used_lbs": weight_lbs
+            }
         except Exception as e:
             return {"error": f"JSON PARSE ERROR: {e}", "raw": response}
 

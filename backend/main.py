@@ -1,5 +1,6 @@
 import os
 import sys
+import re
 
 # Ensure backend directory is in python path
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
@@ -20,6 +21,11 @@ from agents.drone.propulsion_sizing_agent import PropulsionSizingAgent
 from agents.drone.flight_control_safety_agent import FlightControlSafetyAgent
 from agents.qa.code_review_agent import CodeReviewAgent
 from agents.physics.classical_mechanics_agent import ClassicalMechanicsAgent
+# NEW DRONE AGENTS
+from agents.drone.materials_agent import MaterialsAgent
+from agents.drone.cad_agent import CadBuilderAgent
+from agents.drone.simulation_agent import QuickSimAgent
+from agents.drone.research_agent import ResearchAgent
 
 load_dotenv()
 
@@ -45,6 +51,11 @@ registry.register(PropulsionSizingAgent("sys"))
 registry.register(FlightControlSafetyAgent("sys"))
 registry.register(CodeReviewAgent("sys"))
 registry.register(ClassicalMechanicsAgent("sys"))
+# NEW DRONE AGENTS REGISTRATION
+registry.register(MaterialsAgent("sys"))
+registry.register(CadBuilderAgent("sys"))
+registry.register(QuickSimAgent("sys"))
+registry.register(ResearchAgent("sys"))
 
 @app.get("/")
 def read_root():
@@ -61,14 +72,38 @@ class RunContinueRequest(BaseModel):
     problem_description: str
     inputs: dict = {}
 
+def generate_readable_run_id(problem: str) -> str:
+    """
+    Generates a human-readable slug from the problem description.
+    Ex: "Design a heavy lift drone" -> "design-heavy-lift-drone-a1b2"
+    """
+    # 1. Lowercase and remove special chars
+    if not problem:
+        return f"run-{os.urandom(4).hex()}"
+        
+    slug = re.sub(r'[^a-z0-9\s-]', '', problem.lower())
+    # 2. Replace spaces with hyphens
+    slug = re.sub(r'\s+', '-', slug)
+    # 3. Truncate to 4-5 words
+    parts = slug.split('-')[:5]
+    if not parts:
+        return f"run-{os.urandom(4).hex()}"
+        
+    base_slug = '-'.join(parts)
+    # 4. Append short random suffix for uniqueness
+    suffix = os.urandom(2).hex()
+    return f"{base_slug}-{suffix}"
+
 @app.post("/api/run/start")
 async def start_run(req: RunStartRequest):
     agent_class = registry.get_agent("hmao.orchestrator")
     if not agent_class:
         return {"error": "Orchestrator not found"}
     
+    # Generate Readable ID
+    run_id = generate_readable_run_id(req.problem_description)
+    
     # Instantiate fresh for this run
-    run_id = f"run-{os.urandom(4).hex()}"
     agent = GlobalOrchestrator(run_id)
     
     result_msg = await agent.run({
@@ -178,6 +213,46 @@ async def get_agents():
             "instructions": ["Identify Knowns/Unknowns", "Use Standard Model"],
             "tools": ["formula_db", "solver"],
             "relationships": {"incoming": ["hmao-orchestrator"], "outgoing": []}
+        },
+        {
+            "id": "drone-materials-v1",
+            "name": "Materials Agent",
+            "role": "Drone Specialist",
+            "icon": "🧪",
+            "description": "Proposes materials, fasteners, and manufacturing methods.",
+            "instructions": ["Check yield strength", "Optimize weight"],
+            "tools": ["ashby_charts", "supplier_db"],
+            "relationships": {"incoming": ["engineering-core"], "outgoing": ["drone-cad-v1"]}
+        },
+        {
+            "id": "drone-cad-v1",
+            "name": "CAD Builder",
+            "role": "Design Engineer",
+            "icon": "📐",
+            "description": "Generates parametric CAD models and drawings.",
+            "instructions": ["Maintain parametricity", "Export STEP/STL"],
+            "tools": ["opencascade", "freecad"],
+            "relationships": {"incoming": ["drone-materials-v1"], "outgoing": ["drone-quick-sim-v1"]}
+        },
+        {
+            "id": "drone-quick-sim-v1",
+            "name": "Quick-Sim Agent",
+            "role": "Analyst",
+            "icon": "🔥",
+            "description": "Runs fast sanity checks (FEA/CFD) on designs.",
+            "instructions": ["Check max stress", "Verify deflection"],
+            "tools": ["sfepy", "calculix"],
+            "relationships": {"incoming": ["drone-cad-v1"], "outgoing": []}
+        },
+        {
+            "id": "drone-research-v1",
+            "name": "Research Agent",
+            "role": "Researcher",
+            "icon": "📚",
+            "description": "Conducts targeted research on materials and methods.",
+            "instructions": ["Find datasheets", "Cite sources"],
+            "tools": ["web_search", "knowledge_base"],
+            "relationships": {"incoming": ["hmao-orchestrator"], "outgoing": ["drone-materials-v1"]}
         }
     ]
 

@@ -23,7 +23,8 @@ class FlightControlSafetyAgent(DisciplineCore):
         # Load System Prompt
         self.prompt_path = os.path.join(base_dir, "prompts", "flight_safety.md")
 
-    async def handle_abn_message(self, envelope: Dict[str, Any], payload: Dict[str, Any]) -> Dict[str, Any]:
+    async def handle_abn_message(self, envelope: Dict[str, Any]) -> Dict[str, Any]:
+        payload = envelope
         context = {
             "artifacts": {"propulsion_recommendation": payload},
             "objective": "ABN Negotiation: Validate this proposal."

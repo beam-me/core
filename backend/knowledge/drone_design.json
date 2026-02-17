@@ -1,0 +1,97 @@
+{
+  "optimization_strategies": [
+    {
+      "method": "Topology Optimization",
+      "description": "Reduce material in low-stress regions (typically arm centers). Maintain stiffness near motor mounts and central hub.",
+      "target": "Minimize mass while keeping safety factor > 1.5."
+    },
+    {
+      "method": "Aerodynamic Streamlining",
+      "description": "Streamline arm cross-sections (airfoil shape vs. square/round) to reduce drag.",
+      "target": "Optimize propeller-arm clearance (> 15% prop diameter)."
+    },
+    {
+      "method": "Design for Additive Manufacturing (DfAM)",
+      "description": "Limit overhangs to 45 degrees. Use modular arms for easy replacement.",
+      "target": "Reduce support material and print time."
+    },
+    {
+      "method": "Japanese Joinery Assembly",
+      "description": "Use interlocking, screwless mechanisms inspired by traditional Japanese joinery to join arms to the body.",
+      "benefits": "Eliminates metal fasteners (weight reduction), reduces stress concentrations, enables tool-free 'repair-first' arm replacement.",
+      "design_intent": "Repair-First Design Philosophy for sub-250g FPV frames."
+    },
+    {
+      "method": "Trade-Off Study",
+      "description": "Evaluate designs using weighted KPIs based on component function.",
+      "kpi_weights": {
+        "General": {"Mass": 5, "Stress": 3, "Displacement": 3},
+        "Critical_Load_Bearing (Arm/Bottom)": {"Mass": 5, "Stress": 4, "Displacement": 4}
+      },
+      "source": "Optimization Software Methodology"
+    }
+  ],
+  "component_layout_rules": [
+    {
+      "component": "GPS Module",
+      "location": "Upper plate, enclosed in screwed support.",
+      "reason": "Optimal satellite reception and mechanical protection."
+    },
+    {
+      "component": "Video Transmitter (VTX)",
+      "location": "Lower plate, with ventilation cutouts.",
+      "reason": "Heat dissipation and interference minimization."
+    },
+    {
+      "component": "Flight Controller (FC)",
+      "location": "Shifted forward of center.",
+      "reason": "Adjust Center of Gravity (CoG) forward for better forward-flight response."
+    },
+    {
+      "component": "Receiver (Rx)",
+      "location": "Underside of upper plate.",
+      "reason": "Protected placement."
+    },
+    {
+      "component": "Battery",
+      "location": "Top plate, secured with Velcro strap through recesses.",
+      "reason": "Standard CoG balancing."
+    }
+  ],
+  "aerodynamics": [
+    {
+      "feature": "Canopy Cowling",
+      "benefit": "Significantly reduces parasitic drag at forward flight speeds > 10 m/s."
+    },
+    {
+      "feature": "Wiring Channels",
+      "benefit": "Embed wiring internally to reduce drag and snag hazards."
+    }
+  ],
+  "reference_weights": {
+    "center_top_cover_g": 50,
+    "side_top_cover_g": 10,
+    "middle_cover_g": 30,
+    "drone_arm_g": 80,
+    "total_frame_target_g": 450,
+    "sub_250g_target": "For micro-class drones, total weight < 250g is critical for regulatory compliance."
+  },
+  "materials_evaluated": ["PLA", "ASA", "ABS", "PETG", "Carbon Fiber Composite"],
+  "design_rules": [
+    {
+      "rule": "Stiffness-to-Weight",
+      "priority": "High",
+      "description": "Prioritize specific stiffness over absolute strength."
+    },
+    {
+      "rule": "Parametric Modeling",
+      "priority": "Critical",
+      "description": "Use parametric constraints to allow rapid iteration of arm length and thickness. (Software: 3DEXPERIENCE, Autodesk Inventor)"
+    },
+    {
+      "rule": "Static Validation",
+      "priority": "Required",
+      "description": "Validate designs with static FEA (load = 4x hover thrust on arm tip) before prototyping."
+    }
+  ]
+}

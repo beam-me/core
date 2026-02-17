@@ -1,0 +1,95 @@
+{
+  "filaments": [
+    {
+      "material": "PLA (Standard)",
+      "tensile_strength_mpa": 55,
+      "modulus_gpa": 3.5,
+      "density_g_cm3": 1.24,
+      "print_temp_c": "190-220",
+      "bed_temp_c": "60",
+      "notes": "Easy to print, brittle, low heat resistance.",
+      "tags": ["prototyping", "easy-print"]
+    },
+    {
+      "material": "PETG",
+      "yield_strength_mpa": 40,
+      "tensile_strength_mpa": 50,
+      "modulus_gpa": 2.0,
+      "density_g_cm3": 1.27,
+      "print_temp_c": "230-250",
+      "bed_temp_c": "70-80",
+      "notes": "Good balance of strength and ductility. Anisotropic (Z-strength 40-60% lower).",
+      "tags": ["versatile", "tough", "prototyping-standard"]
+    },
+    {
+      "material": "ABS",
+      "tensile_strength_mpa": 45,
+      "modulus_gpa": 2.3,
+      "density_g_cm3": 1.04,
+      "print_temp_c": "230-250",
+      "notes": "Durable, impact resistant, requires enclosure (warping).",
+      "tags": ["durable", "impact-resistant"]
+    },
+    {
+      "material": "Carbon Fiber PLA",
+      "tensile_strength_mpa": 65,
+      "modulus_gpa": 6.0,
+      "density_g_cm3": 1.3,
+      "print_temp_c": "200-230",
+      "notes": "High stiffness, abrasive (needs hardened nozzle).",
+      "tags": ["stiff", "lightweight", "abrasive"]
+    },
+    {
+      "material": "Carbon Fiber Nylon",
+      "tensile_strength_mpa": 75,
+      "modulus_gpa": 7.0,
+      "density_g_cm3": 1.15,
+      "print_temp_c": "250-270",
+      "notes": "Extremely strong, impact resistant, moisture sensitive. Production benchmark.",
+      "tags": ["high-performance", "impact-resistant", "production-ready"]
+    }
+  ],
+  "fabrication_settings": {
+    "infill_density": "100% (for structural strength)",
+    "layer_height": "0.2 mm",
+    "nozzle_diameter": "0.4 mm",
+    "retraction_speed": "40 mm/s",
+    "retraction_distance": "4.5 mm"
+  },
+  "failure_criteria": [
+    {
+      "criterion": "Von Mises Stress",
+      "limit": "Must not exceed Yield Strength (e.g., 40 MPa for PETG).",
+      "application": "General yielding check."
+    },
+    {
+      "criterion": "Maximum Strain (Z-Direction)",
+      "limit": "Must not exceed 5%.",
+      "application": "Prevents layer delamination in FDM parts."
+    }
+  ],
+  "design_guidelines": [
+    {
+      "rule": "Fiber Orientation",
+      "description": "Strength is highest along the layer lines. Print orientation must align with primary load paths."
+    },
+    {
+      "rule": "Prototyping Strategy",
+      "description": "Use PETG for initial functional validation and crash testing due to its toughness and ease of printing. Switch to Carbon Fiber Nylon for final production performance."
+    },
+    {
+      "rule": "Nozzle Selection",
+      "description": "Composite filaments are abrasive. Use hardened steel or ruby-tipped nozzles."
+    }
+  ],
+  "embedded_electronics": [
+    {
+      "technique": "Conductive Traces",
+      "description": "Use conductive filaments to print low-current traces directly into the chassis."
+    },
+    {
+      "technique": "Thermal Management",
+      "description": "Use localized heatsinks or thermally conductive filaments near ESCs and motors."
+    }
+  ]
+}

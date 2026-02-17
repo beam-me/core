@@ -1,7 +1,12 @@
 import datetime
 from typing import Dict, List, Any, Optional
 from abc import ABC, abstractmethod
-# ABSOLUTE IMPORT FIX
+import os
+import sys
+
+# Ensure backend directory is in python path
+sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+
 from agents.base import BaseAgent, AgentMessage, AgentState
 from lib.abn_client import ABNClient
 
@@ -73,6 +78,22 @@ class DisciplineCore(BaseAgent, ABC):
             
             if validation.get("passed", False):
                 self.log("Critic", "Approval", "Result Validated. Promoting to Orchestrator.", "✅")
+                
+                # Check for Missing Variables -> AWAITING_USER
+                # This was missing in the original implementation!
+                if "missing_vars" in execution_result and execution_result["missing_vars"]:
+                     return AgentMessage(
+                        run_id=self.run_id,
+                        from_agent=self.core_name,
+                        state=AgentState.AWAITING_USER,
+                        summary="Clarification Needed",
+                        confidence=1.0,
+                        payload={
+                            **execution_result,
+                            "trace_log": self.trace_log
+                        }
+                    )
+                
                 return AgentMessage(
                     run_id=self.run_id,
                     from_agent=self.core_name,
